@@ -62,10 +62,10 @@ class OpenRouterAPI:
 
         # Example processing logic
         try:
-            results = response.get('results', [])
-            return results
-        except KeyError as e:
-            print(f"Key error: {e}")
+            # Assuming the response is a string, return it directly
+            return response
+        except Exception as e:
+            print(f"Error processing the response: {e}")
             return "Error processing the response."
 
 # Example usage
