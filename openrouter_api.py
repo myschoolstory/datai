@@ -16,6 +16,10 @@ class OpenRouterAPI:
         :param dataset: A list of dictionaries containing 'prompt' and 'answer' keys.
         :return: The response from the API.
         """
+        if not self.api_key:
+            print("API key is missing.")
+            return None
+
         headers = {
             'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json'
@@ -43,6 +47,8 @@ class OpenRouterAPI:
         # Example processing logic
         try:
             results = response.get('results', [])
+            if not results:
+                return "No results found in the response."
             return results
         except KeyError as e:
             print(f"Key error: {e}")
