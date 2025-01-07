@@ -1,13 +1,18 @@
 import os
-import requests
+from openai import OpenAI
 
 class OpenRouterAPI:
     def __init__(self):
         self.api_key = os.getenv('OPENROUTER_API_KEY')
-        self.base_url = "https://api.openrouter.com/v1/models/meta-llama/llama-3.1-405b-instruct:free"
+        self.base_url = "https://openrouter.ai/api/v1"
 
         if not self.api_key:
             raise ValueError("API key for OpenRouter is not set. Please set the OPENROUTER_API_KEY environment variable.")
+
+        self.client = OpenAI(
+            base_url=self.base_url,
+            api_key=self.api_key,
+        )
 
     def send_request(self, dataset):
         """
@@ -16,22 +21,33 @@ class OpenRouterAPI:
         :param dataset: A list of dictionaries containing 'prompt' and 'answer' keys.
         :return: The response from the API.
         """
-        if not self.api_key:
-            print("API key is missing.")
-            return None
-
-        headers = {
-            'Authorization': f'Bearer {self.api_key}',
-            'Content-Type': 'application/json'
-        }
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": item['prompt']
+                    },
+                    {
+                        "type": "text",
+                        "text": item['answer']
+                    }
+                ]
+            } for item in dataset
+        ]
 
         try:
-            response = requests.post(self.base_url, json=dataset, headers=headers)
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.HTTPError as http_err:
-            print(f"HTTP error occurred: {http_err}")
-        except requests.exceptions.RequestException as err:
+            completion = self.client.chat.completions.create(
+                extra_headers={
+                    "HTTP-Referer": "https://github.com/myschoolstory/datai",  # Optional. Site URL for rankings on openrouter.ai.
+                    "X-Title": "Datai",  # Optional. Site title for rankings on openrouter.ai.
+                },
+                model="google/gemini-2.0-flash-thinking-exp:free",
+                messages=messages
+            )
+            return completion.choices[0].message.content
+        except Exception as err:
             print(f"Error occurred: {err}")
 
     def process_response(self, response):
@@ -47,8 +63,6 @@ class OpenRouterAPI:
         # Example processing logic
         try:
             results = response.get('results', [])
-            if not results:
-                return "No results found in the response."
             return results
         except KeyError as e:
             print(f"Key error: {e}")
